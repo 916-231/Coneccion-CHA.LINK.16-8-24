@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+// Importar las interfaces de Chainlink
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
+
+contract WeatherData is ChainlinkClient {
+using Chainlink for Chainlink.Request;
+
+uint256 public humedad;
+uint256 public temperatura;
+uint256 public viento;
+
+address private oracle;
+bytes32 private jobId;
+uint256 private fee;
+
+constructor() {
+setPublicChainlinkToken();
+oracle = 0xYourOracleAddress; // Cambia esto a la dirección de tu oracle
+jobId = "YourJobId"; // Cambia esto al Job ID que necesites
+fee = 0.1 * 10 ** 18; // Costo de la consulta en LINK
+}
+
+function requestWeatherData(string memory _location) public returns (bytes32 requestId) {
+Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfill.selector);
+req.add("get", string(abi.encodePacked("https://api.weatherapi.com/v1/current.json?key=YourApiKey&q=", _location)));
+req.add("path", "current.humidity"); // Ruta a la humedad
+sendChainlinkRequestTo(oracle, req, fee);
+
+// Envía otra solicitud para obtener más datos (temperatura, viento, etc.)
+requestTemperature(_location);
+requestWind(_location);
+
+return requestId;
+}
+
+function requestTemperature(string memory _location) private {
+Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfillTemperature.selector);
+req.add("get", string(abi.encodePacked("https://api.weatherapi.com/v1/current.json?key=YourApiKey&q=", _location)));
+req.add("path", "current.temp_c"); // Ruta a la temperatura
+sendChainlinkRequestTo(oracle, req, fee);
+}
+
+function requestWind(string memory _location) private {
+Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfillWind.selector);
+req.add("get", string(abi.encodePacked("https://api.weatherapi.com/v1/current.json?key=YourApiKey&q=", _location)));
+req.add("path", "current.wind_kph"); // Ruta a la velocidad del viento
+sendChainlinkRequestTo(oracle, req, fee);
+}
+
+function fulfill(bytes32 _requestId, uint256 _humedad) public recordChainlinkFulfillment(_requestId) {
+humedad = _humedad;
+}
+
+function fulfillTemperature(bytes32 _requestId, uint256 _temperatura) public recordChainlinkFulfillment(_requestId) {
+temperatura = _temperatura;
+}
+
+function fulfillWind(bytes32 _requestId, uint256 _viento) public recordChainlinkFulfillment(_requestId) {
+viento = _viento;
+}
+}
