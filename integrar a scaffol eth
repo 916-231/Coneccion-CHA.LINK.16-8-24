@@ -1,0 +1,50 @@
+import { useState } from "react";
+import { useContractLoader, useContractReader } from "eth-hooks";
+import { useMoralis } from "react-moralis";
+import WeatherData from "./WeatherData.json"; // Asegúrate de tener la ABI aquí
+
+function App() {
+const { isWeb3Enabled, account } = useMoralis();
+const [location, setLocation] = useState("");
+
+const contractAddress = "0xYourContractAddress"; // Reemplázalo con la dirección de tu contrato desplegado
+const contract = useContractLoader(/* provider aquí */, { WeatherData });
+
+const [humedad, setHumedad] = useState(null);
+const [temperatura, setTemperatura] = useState(null);
+const [viento, setViento] = useState(null);
+const [presion, setPresion] = useState(null);
+const [sensacionTermica, setSensacionTermica] = useState(null);
+
+const obtenerDatosClimaticos = async () => {
+if (contract) {
+const requestId = await contract.requestWeatherData(location);
+console.log(requestId); // Para verificar si la solicitud fue enviada
+// Aquí puedes agregar lógica adicional para esperar hasta que los datos sean válidos
+// y actualizar las variables de estado para hypertension, temperatura, etc.
+}
+};
+
+return (
+<div>
+<h1>Consulta del Tiempo</h1>
+<input
+type="text"
+value={location}
+onChange={(e) => setLocation(e.target.value)}
+placeholder="Ingresa la ubicación"
+/>
+<button onClick={obtenerDatosClimaticos}>Obtener Datos Climáticos</button>
+<div>
+<h3>Resultados:</h3>
+<p>Humedad: {humedad !== null ? `${humedad}%` : "Sin datos"}</p>
+<p>Temperatura: {temperatura !== null ? `${temperatura} °C` : "Sin datos"}</p>
+<p>Viento: {viento !== null ? `${viento} km/h` : "Sin datos"}</p>
+<p>Presión Atmosférica: {presion !== null ? `${presion} hPa` : "Sin datos"}</p>
+<p>Sensación Térmica: {sensacionTermica !== null ? `${sensacionTermica} °C` : "Sin datos"}</p>
+</div>
+</div>
+);
+}
+
+export default App;
